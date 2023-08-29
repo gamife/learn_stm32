@@ -1,3 +1,32 @@
+# 安装环境
+### 1. 安装c/c++环境, 按照[vscode c++]("https://code.visualstudio.com/docs/languages/cpp") 文档去安装
+* MinGW
+```bash
+rustup default stable-x86_64-pc-windows-gnu
+```
+* MSVC
+```bash
+rustup default stable-x86_64-pc-windows-msvc
+```
+
+### 2. 安装rust嵌入式环境
+```bash
+# https://docs.rust-embedded.org/book/intro/install.html
+# Cortex-M3 (ARMv7-M architecture):
+rustup target add thumbv7m-none-eabi
+cargo install cargo-binutils
+rustup component add llvm-tools-preview
+cargo install cargo-generate
+```
+### 3. [arm-none-eabi-gdb](https://developer.arm.com/downloads/-/gnu-rm)
+
+### 4. [openocd](https://gnutoolchains.com/arm-eabi/openocd/)
+
+# 下载程序
+```bash
+cargo build --release
+rust-objcopy.exe  --strip-all  "D:\project\app\target\thumbv7m-none-eabi\release\app"  -O binary   "D:\project\app\target\thumbv7m-none-eabi\release\app.bin"
+```
 # `cortex-m-quickstart`
 
 > A template for building applications for ARM Cortex-M microcontrollers
