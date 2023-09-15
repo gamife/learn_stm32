@@ -39,5 +39,6 @@ fn main() {
     println!("cargo:rustc-link-arg=--nmagic");
 
     // Set the linker script to the one provided by cortex-m-rt.
+    // 使用cortex-m-rt的link.x文件作为链接脚本
     println!("cargo:rustc-link-arg=-Tlink.x");
 }
