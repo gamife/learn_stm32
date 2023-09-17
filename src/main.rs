@@ -1,8 +1,7 @@
 #![no_std]
 #![no_main]
 
-pub mod system;
-
+use app::system;
 #[cfg(not(debug_assertions))]
 use panic_halt as _;
 #[cfg(debug_assertions)]
@@ -12,7 +11,7 @@ use panic_semihosting as _; // logs messages to the host stderr; requires a debu
 
 use stm32f1xx_hal::pac::interrupt;
 
-use core::{fmt::Write, ptr};
+use core::fmt::Write;
 use cortex_m::peripheral::syst::SystClkSource;
 use cortex_m_rt::{entry, exception, ExceptionFrame};
 use cortex_m_semihosting::{
