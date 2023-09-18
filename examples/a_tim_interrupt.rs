@@ -28,7 +28,7 @@ use core::{
 };
 use cortex_m::{interrupt::Mutex, peripheral::syst::SystClkSource};
 use cortex_m_rt::{entry, exception, ExceptionFrame};
-use cortex_m_semihosting::hprintln;
+// use cortex_m_semihosting::hprintln;
 use fugit::{Duration, ExtU32};
 use stm32f1xx_hal::timer::Timer;
 use stm32f1xx_hal::{pac, prelude::*};

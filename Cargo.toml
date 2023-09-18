@@ -18,7 +18,7 @@ panic-semihosting = "0.6.0"
 fugit = "0.3.7"
 
 embedded-graphics = "0.8.0"
-ssd1306 = "0.8.1"
+ssd1306 = { version = "0.8.1"}
 
 
 
