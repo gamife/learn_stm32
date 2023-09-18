@@ -15,6 +15,7 @@ use stm32f1xx_hal::{
     gpio::{gpioa::PA1, Output, PushPull},
     pac::interrupt,
     time::Hertz,
+    timer::{self, CounterHz},
 };
 
 use core::{
@@ -27,12 +28,8 @@ use core::{
 };
 use cortex_m::{interrupt::Mutex, peripheral::syst::SystClkSource};
 use cortex_m_rt::{entry, exception, ExceptionFrame};
-use cortex_m_semihosting::{
-    hio::{self, HStdout},
-    hprintln,
-};
+use cortex_m_semihosting::hprintln;
 use fugit::{Duration, ExtU32};
-use stm32f1xx_hal::timer::PclkSrc;
 use stm32f1xx_hal::timer::Timer;
 use stm32f1xx_hal::{pac, prelude::*};
 
@@ -48,11 +45,11 @@ static COUNTER: AtomicUsize = AtomicUsize::new(0);
 
 static LED: Mutex<RefCell<Option<PA1<Output<PushPull>>>>> = Mutex::new(RefCell::new(None));
 
-static TIM: Mutex<RefCell<Option<Timer<TIM2>>>> = Mutex::new(RefCell::new(None));
+static TIM: Mutex<RefCell<Option<CounterHz<TIM2>>>> = Mutex::new(RefCell::new(None));
 
 #[entry]
 fn main() -> ! {
-    hprintln!("Hello, world!").unwrap();
+    hprintln!("Hello, world!");
 
     let p = pac::Peripherals::take().unwrap();
 
@@ -60,10 +57,9 @@ fn main() -> ! {
     let mut rcc = p.RCC.constrain();
 
     let clocks = system::rcc_init::set_sys_clock_to72(rcc.cfgr, &mut flash.acr);
+    hprintln!("clk: {:?} Hz", clocks.pclk1_tim().to_Hz());
 
-    hprintln!("clk: {:?} Hz", clocks.pclk1_tim().0).unwrap();
-
-    let mut gpioa = p.GPIOA.split(&mut rcc.apb2);
+    let mut gpioa = p.GPIOA.split();
     let mut PA1 = gpioa.pa1.into_push_pull_output(&mut gpioa.crl);
     PA1.set_low();
 
@@ -73,7 +69,7 @@ fn main() -> ! {
     unsafe {
         // AIRCR_VECTKEY_MASK 这个值是固定要写的. 手册里On writes, write 0x5FA to VECTKEY, otherwise the write is ignored.
         cp.SCB.aircr.modify(|mut raw| {
-            raw |= (AIRCR_VECTKEY_MASK | NVIC_PRIORITY_GROUP_2);
+            raw |= AIRCR_VECTKEY_MASK | NVIC_PRIORITY_GROUP_2;
             raw
         });
         // SCB_AIRCR_PRIGROUP 设置NVIC优先级分组, 优先级有4个bit, 但是优先级有两种(1.嵌套中断,也就是中断打断中断 2.中断排队), 所以4个bit中几个bit作为嵌套中断优先级就是由这里设置的
@@ -86,8 +82,11 @@ fn main() -> ! {
     // TIM的频率为72MHz, 计数器和预分频器都为16位, 所以有个最值 72MHz/(2^16+1)/(2^16+1)~=0.01676Hz
     // 1.RCC时钟启动TIM1
     // 2.配置时基单元
-    let timeout = 2.hz();
-    let mut tim = Timer::<TIM2>::tim2(p.TIM2, timeout, clocks, &mut rcc.apb1);
+    let timeout = 2.Hz();
+    let mut tim = p.TIM2.counter_hz(&clocks);
+    tim.start(timeout).unwrap();
+    // let mut tim = Timer::<TIM2>::tim2(p.TIM2, timeout, clocks, &mut rcc.apb1);
+
     // 使能计数器的更新中断
     tim.listen(stm32f1xx_hal::timer::Event::Update);
     // 启动中断后, 这里再次start初始化会panic
@@ -97,13 +96,13 @@ fn main() -> ! {
 
     // 查看一下TIM的有关寄存器
     // let a:  &pac::tim2::RegisterBlock =   unsafe { &*  (1073741824 as *const _) };
-    // hprintln!("arr: {:#x}", a.arr.read().arr().bits()).unwrap();
-    // hprintln!("psc: {:#x}", a.psc.read().psc().bits()).unwrap();
+    // hprintln!("arr: {:#x}", a.arr.read().arr().bits());
+    // hprintln!("psc: {:#x}", a.psc.read().psc().bits());
 
     loop {
         // let count = unsafe { COUNTER };
         let count = COUNTER.load(Ordering::Relaxed);
-        hprintln!("interupt: {}", count).unwrap();
+        hprintln!("interupt: {}", count);
 
         cortex_m::interrupt::free(|cs| {
             let mut led = LED.borrow(cs).borrow_mut();
@@ -129,6 +128,6 @@ fn TIM2() {
 
         let mut tim = TIM.borrow(cs).borrow_mut();
         // 清除中断标志位
-        let _ = tim.as_mut().unwrap().wait();
+        let _ = tim.as_mut().unwrap().clear_interrupt(timer::Event::Update);
     });
 }

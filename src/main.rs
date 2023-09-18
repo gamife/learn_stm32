@@ -15,7 +15,7 @@ use core::fmt::Write;
 use cortex_m::peripheral::syst::SystClkSource;
 use cortex_m_rt::{entry, exception, ExceptionFrame};
 use cortex_m_semihosting::{
-    hio::{self, HStdout},
+    hio::{self, HostStream},
     hprintln,
 };
 use stm32f1xx_hal::{pac, prelude::*};
@@ -23,16 +23,16 @@ use stm32f1xx_hal::{pac, prelude::*};
 #[entry]
 fn main() -> ! {
     // cortex_m::asm::nop(); // To not have main optimize to abort in release mode, remove when you add code
-    hprintln!("Hello, world!").unwrap();
+    hprintln!("Hello, world!");
 
     let p = pac::Peripherals::take().unwrap();
 
     let mut flash = p.FLASH.constrain();
-    let mut rcc = p.RCC.constrain();
+    let rcc = p.RCC.constrain();
 
     system::rcc_init::set_sys_clock_to72(rcc.cfgr, &mut flash.acr);
 
-    let mut gpioa = p.GPIOA.split(&mut rcc.apb2);
+    let mut gpioa = p.GPIOA.split();
     gpioa.pa1.into_push_pull_output(&mut gpioa.crl).set_low();
 
     let cp = cortex_m::Peripherals::take().unwrap();
@@ -57,7 +57,7 @@ fn main() -> ! {
 #[exception]
 fn SysTick() {
     static mut COUNT: u32 = 0;
-    static mut STDOUT: Option<HStdout> = None;
+    static mut STDOUT: Option<HostStream> = None;
 
     *COUNT += 1;
 
@@ -72,7 +72,7 @@ fn SysTick() {
 }
 
 #[exception]
-fn HardFault(ef: &ExceptionFrame) -> ! {
+unsafe fn HardFault(ef: &ExceptionFrame) -> ! {
     if let Ok(mut hstdout) = hio::hstdout() {
         writeln!(hstdout, "{:#?}", ef).ok();
     }
