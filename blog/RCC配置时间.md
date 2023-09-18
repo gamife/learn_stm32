@@ -11,7 +11,7 @@
 10. RCC_CFGR_SW -> 选择 SYSCLK 系统时钟的来源, 设置成PLL
 11. RCC_CFGR_SWS ->  等待 SYSCLK 系统时钟切换成设置的来源
 #### 时钟树
-![时钟树](images\时钟树.png)  
+![时钟树](images/时钟树.png)  
 
 * OSC_IN引脚, 接的就是板子上的8M晶振.
 

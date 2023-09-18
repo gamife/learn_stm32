@@ -30,12 +30,18 @@ fn main() -> ! {
     let mut flash = p.FLASH.constrain();
     let rcc = p.RCC.constrain();
 
-    system::rcc_init::set_sys_clock_to72(rcc.cfgr, &mut flash.acr);
+    let _clocks = system::rcc_init::set_sys_clock_to72(rcc.cfgr, &mut flash.acr);
 
     let mut gpioa = p.GPIOA.split();
     gpioa.pa1.into_push_pull_output(&mut gpioa.crl).set_low();
 
     let cp = cortex_m::Peripherals::take().unwrap();
+
+    // 下面的初始化等价于这三句
+    // let mut syst = cp.SYST.counter_hz(&_clocks);
+    // syst.start(9_000_000.Hz());
+    // syst.listen(stm32f1xx_hal::timer::SysEvent::Update);
+
     let mut syst = cp.SYST;
 
     // 这个Cortex系统时钟(内核的), 是由 HCLK/8=72MHz/8=9MHz
